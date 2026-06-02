@@ -1,5 +1,10 @@
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { buttonVariants } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { createClient } from "@/lib/supabase/server";
+import { SignOutButton } from "@/components/sign-out-button";
+import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/people", label: "People" },
@@ -8,7 +13,10 @@ const links = [
   { href: "/about", label: "About" },
 ];
 
-export function Nav() {
+export async function Nav() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm">
       <nav className="mx-auto max-w-7xl px-6 h-14 flex items-center justify-between">
@@ -28,9 +36,18 @@ export function Nav() {
               {link.label}
             </Link>
           ))}
-          <div className="ml-2 pl-2 border-l border-border">
-            <ThemeToggle />
-          </div>
+          <Separator orientation="vertical" className="mx-2 h-5" />
+          {user ? (
+            <SignOutButton />
+          ) : (
+            <Link
+              href="/login"
+              className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+            >
+              Sign in
+            </Link>
+          )}
+          <ThemeToggle />
         </div>
       </nav>
     </header>
