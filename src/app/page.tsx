@@ -1,4 +1,5 @@
 import { Nav } from "@/components/nav";
+import { HeroTitle } from "@/components/hero/hero-title";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,9 +16,7 @@ export default function Home() {
           <p className="text-sm tracking-widest uppercase text-muted-foreground mb-6 font-sans">
             Carnegie Mellon University
           </p>
-          <h1 className="font-heading text-[clamp(4rem,16vw,14rem)] leading-none tracking-tight text-foreground">
-            CMU MHCI
-          </h1>
+          <HeroTitle text="CMU MHCI" />
           <p className="mt-8 max-w-md text-muted-foreground text-lg leading-relaxed">
             A community directory for alumni of the Masters in Human-Computer
             Interaction program.
