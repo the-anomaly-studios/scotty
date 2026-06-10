@@ -31,7 +31,9 @@ export function HeroTitle({ text = "CMU MHCI" }: { text?: string }) {
           as the fallback while the WebGL chunk loads. */}
       <h1
         className={cn(
-          "font-heading text-[clamp(4rem,16vw,14rem)] leading-none tracking-tight transition-opacity duration-700",
+          // Horizontal/vertical padding (em-relative, so it scales with the
+          // clamp font size) gives the WebGL displacement room before clipping.
+          "px-[0.12em] py-[0.06em] font-heading text-[clamp(4rem,16vw,14rem)] leading-none tracking-tight transition-opacity duration-700",
           mode === "touch" && "hero-shimmer",
           mode === "webgl" && ready && "opacity-0"
         )}

@@ -131,11 +131,13 @@ export default function TextDistortion({
       const w = Math.max(1, Math.round(rect.width));
       const h = Math.max(1, Math.round(rect.height));
 
-      const cs = getComputedStyle(container!);
+      // Read the real type from the <h1> so the texture matches the DOM
+      // heading exactly; the container's padding becomes the canvas margin.
+      const heading = container!.querySelector("h1") ?? container!;
+      const cs = getComputedStyle(heading);
       const family = cs.fontFamily || "serif";
       const color = cs.color || "#000";
-      // leading-none → text height ≈ font size ≈ container height.
-      const fontSize = h;
+      const fontSize = parseFloat(cs.fontSize) || h;
 
       textCanvas.width = Math.round(w * dpr);
       textCanvas.height = Math.round(h * dpr);
@@ -177,12 +179,13 @@ export default function TextDistortion({
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerleave", onPointerLeave);
 
-    const clock = new THREE.Clock();
+    const timer = new THREE.Timer();
     let raf = 0;
     let signalled = false;
 
     function tick() {
-      uniforms.uTime.value = clock.getElapsedTime();
+      timer.update();
+      uniforms.uTime.value = timer.getElapsed();
       renderer.render(scene, camera);
       if (!signalled) {
         signalled = true;
