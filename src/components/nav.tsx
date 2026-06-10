@@ -3,7 +3,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/server";
-import { SignOutButton } from "@/components/sign-out-button";
+import { UserMenu } from "@/components/user-menu";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -16,6 +16,16 @@ const links = [
 export async function Nav() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+
+  let avatarUrl: string | null = user?.user_metadata?.avatar_url ?? null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("headshot_url")
+      .eq("user_id", user.id)
+      .single();
+    if (profile?.headshot_url) avatarUrl = profile.headshot_url;
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/80 backdrop-blur-sm">
@@ -38,7 +48,10 @@ export async function Nav() {
           ))}
           <Separator orientation="vertical" className="mx-2 h-5" />
           {user ? (
-            <SignOutButton />
+            <UserMenu
+              avatarUrl={avatarUrl}
+              email={user.email ?? ""}
+            />
           ) : (
             <Link
               href="/login"
