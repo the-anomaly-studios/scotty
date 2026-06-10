@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { deleteJob } from "@/app/jobs/actions";
+import { getIsAdmin } from "@/lib/admin";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import type { Job } from "@/lib/types";
@@ -39,12 +40,13 @@ function timeAgo(dateStr: string) {
 export default async function JobsPage() {
   const supabase = await createClient();
 
-  const [{ data: jobs }, { data: { user } }] = await Promise.all([
+  const [{ data: jobs }, { data: { user } }, isAdminUser] = await Promise.all([
     supabase
       .from("jobs")
       .select("*, poster:profiles!posted_by(id, name)")
       .order("created_at", { ascending: false }),
     supabase.auth.getUser(),
+    getIsAdmin(supabase),
   ]);
 
   const currentProfileId = user
@@ -162,8 +164,8 @@ export default async function JobsPage() {
                       </div>
                     </div>
 
-                    {/* Delete button for owner */}
-                    {currentProfileId === job.posted_by && (
+                    {/* Delete button for owner or admin */}
+                    {(currentProfileId === job.posted_by || isAdminUser) && (
                       <form
                         action={async () => {
                           "use server";

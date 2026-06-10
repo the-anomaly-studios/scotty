@@ -45,7 +45,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protect authenticated-only routes
-  const protectedPrefixes = ["/profile", "/jobs/new"];
+  const protectedPrefixes = ["/profile", "/jobs/new", "/admin"];
   const isProtected = protectedPrefixes.some((prefix) =>
     request.nextUrl.pathname.startsWith(prefix)
   );

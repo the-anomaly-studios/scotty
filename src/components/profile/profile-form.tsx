@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useState } from "react";
 
 import { updateProfile } from "@/app/profile/actions";
+import type { ProfileFormValues } from "@/app/profile/actions";
 import type { Profile } from "@/lib/types";
 
 import { Button } from "@/components/ui/button";
@@ -44,7 +45,14 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function ProfileForm({ profile }: { profile: Profile }) {
+export function ProfileForm({
+  profile,
+  submitAction,
+}: {
+  profile: Profile;
+  // Injected by admin edit page; defaults to the user's own updateProfile.
+  submitAction?: (values: ProfileFormValues) => Promise<{ error?: string } | void>;
+}) {
   const [headshotUrl, setHeadshotUrl] = useState(profile.headshot_url);
 
   const form = useForm<FormValues>({
@@ -72,7 +80,8 @@ export function ProfileForm({ profile }: { profile: Profile }) {
   const { register, handleSubmit, setValue, watch, formState: { errors, isSubmitting } } = form;
 
   async function onSubmit(values: FormValues) {
-    const result = await updateProfile(values);
+    const action = submitAction ?? updateProfile;
+    const result = await action(values);
     if (result?.error) {
       toast.error(result.error);
     } else {

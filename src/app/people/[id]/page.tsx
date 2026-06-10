@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 import { Globe, Mail } from "lucide-react";
 import { RequestMentorship } from "@/components/mentorship/request-mentorship";
+import { getIsAdmin } from "@/lib/admin";
+import { adminDeactivateProfile } from "@/app/admin/actions";
 
 export default async function PublicProfilePage({
   params,
@@ -44,12 +46,39 @@ export default async function PublicProfilePage({
       .single();
     viewerProfileId = viewerProfile?.id ?? null;
   }
+  const isAdminViewer = await getIsAdmin(supabase);
 
   return (
     <>
       <Nav />
       <main className="pt-14 min-h-screen">
         <div className="max-w-3xl mx-auto px-6 py-12">
+          {/* Admin toolbar */}
+          {isAdminViewer && (
+            <div className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm">
+              <span className="text-xs uppercase tracking-widest text-muted-foreground mr-2">Admin</span>
+              <Link
+                href={`/admin/profiles/${p.id}/edit`}
+                className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+              >
+                Edit profile
+              </Link>
+              <form
+                action={async () => {
+                  "use server";
+                  await adminDeactivateProfile(p.id);
+                }}
+              >
+                <button
+                  type="submit"
+                  className={cn(buttonVariants({ variant: "destructive", size: "sm" }))}
+                >
+                  Deactivate
+                </button>
+              </form>
+            </div>
+          )}
+
           {/* Header */}
           <div className="flex flex-col sm:flex-row gap-6 items-start">
             <div className="relative w-24 h-24 rounded-full overflow-hidden bg-muted border border-border shrink-0">
