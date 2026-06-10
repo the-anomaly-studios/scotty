@@ -1,3 +1,18 @@
+export type Job = {
+  id: string;
+  posted_by: string;
+  title: string;
+  company: string;
+  location: string;
+  work_type: "remote" | "hybrid" | "onsite";
+  employment_type: "full-time" | "part-time" | "contract" | "internship";
+  description: string;
+  application_url: string;
+  created_at: string;
+  expires_at: string;
+  poster: { id: string; name: string | null } | null;
+};
+
 export type Profile = {
   id: string;
   user_id: string | null;
