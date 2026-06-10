@@ -2,10 +2,14 @@
 
 import { useRef, useState } from "react";
 import Image from "next/image";
-import { uploadHeadshot } from "@/app/profile/actions";
+import { setHeadshotUrl } from "@/app/profile/actions";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Camera, Loader2 } from "lucide-react";
+
+const MAX_BYTES = 5 * 1024 * 1024;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp"];
 
 type Props = {
   currentUrl: string | null;
@@ -21,14 +25,52 @@ export function HeadshotUploader({ currentUrl, onUpload }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Local preview
-    setPreview(URL.createObjectURL(file));
+    // Reset the input so re-selecting the same file fires onChange again.
+    e.target.value = "";
+
+    if (!ALLOWED.includes(file.type)) {
+      toast.error("File must be a JPG, PNG, or WebP image");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error("File must be under 5MB");
+      return;
+    }
+
+    // Local preview while the upload runs.
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
     setLoading(true);
 
-    const formData = new FormData();
-    formData.append("file", file);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      setPreview(currentUrl);
+      toast.error("You must be signed in to upload a photo");
+      return;
+    }
 
-    const result = await uploadHeadshot(formData);
+    const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+    const path = `${user.id}/headshot.${ext}`;
+
+    // Direct browser-to-Supabase upload — bypasses the Server Action body limit.
+    const { error: uploadError } = await supabase.storage
+      .from("headshots")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      setLoading(false);
+      setPreview(currentUrl);
+      toast.error(uploadError.message);
+      return;
+    }
+
+    const { data: { publicUrl } } = supabase.storage.from("headshots").getPublicUrl(path);
+    // Cache-bust so a replaced photo at the same path renders immediately.
+    const bustedUrl = `${publicUrl}?v=${Date.now()}`;
+
+    const result = await setHeadshotUrl(bustedUrl);
 
     setLoading(false);
     if (result.error) {
@@ -36,6 +78,7 @@ export function HeadshotUploader({ currentUrl, onUpload }: Props) {
       setPreview(currentUrl);
     } else if (result.url) {
       onUpload(result.url);
+      setPreview(result.url);
       toast.success("Headshot updated");
     }
   }

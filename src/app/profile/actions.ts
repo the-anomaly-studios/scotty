@@ -107,36 +107,29 @@ export async function updateProfile(values: ProfileFormValues) {
   return { success: true };
 }
 
-export async function uploadHeadshot(formData: FormData) {
+// The image is uploaded directly from the browser to Supabase Storage (see
+// HeadshotUploader); this action only persists the resulting public URL to the
+// profile row, so its body is just a short string and never hits the Server
+// Action body-size limit.
+export async function setHeadshotUrl(url: string) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const file = formData.get("file") as File;
-  if (!file || file.size === 0) return { error: "No file provided" };
-  if (file.size > 5 * 1024 * 1024) return { error: "File must be under 5MB" };
-  if (!file.type.startsWith("image/")) return { error: "File must be an image" };
-
-  const ext = file.name.split(".").pop();
-  const path = `${user.id}/headshot.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from("headshots")
-    .upload(path, file, { upsert: true });
-
-  if (uploadError) return { error: uploadError.message };
-
-  const { data: { publicUrl } } = supabase.storage
-    .from("headshots")
-    .getPublicUrl(path);
+  // Only accept a public URL from our own headshots bucket for this user.
+  const expectedPrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/headshots/${user.id}/`;
+  if (!url.startsWith(expectedPrefix)) {
+    return { error: "Invalid headshot URL" };
+  }
 
   const { error: updateError } = await supabase
     .from("profiles")
-    .update({ headshot_url: publicUrl })
+    .update({ headshot_url: url })
     .eq("user_id", user.id);
 
   if (updateError) return { error: updateError.message };
 
   revalidatePath("/profile/edit");
-  return { success: true, url: publicUrl };
+  revalidatePath("/people");
+  return { success: true, url };
 }
