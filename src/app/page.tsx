@@ -1,12 +1,99 @@
 import { Nav } from "@/components/nav";
 import { HeroTitle } from "@/components/hero/hero-title";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import Link from "next/link";
+import { StatsBar } from "@/components/home/stats-bar";
+import { FeaturedAlumni } from "@/components/home/featured-alumni";
+import { RecentJobs } from "@/components/home/recent-jobs";
+import { RecentNews } from "@/components/home/recent-news";
+import { JoinCTA } from "@/components/home/join-cta";
+import { createClient } from "@/lib/supabase/server";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
+import type { Profile, Job } from "@/lib/types";
 
-export default function Home() {
+// Returns year * 100 + ISO week number — stable for the whole week.
+function isoWeekSeed(): number {
+  const now = new Date();
+  const d = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return d.getUTCFullYear() * 100 + week;
+}
+
+// Mulberry32 PRNG — deterministic shuffle given the same seed.
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const copy = [...arr];
+  let s = seed;
+  const rand = () => {
+    s = (s + 0x6d2b79f5) | 0;
+    let t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+export default async function Home() {
+  const supabase = await createClient();
+
+  const [
+    { data: allMeta },
+    { data: featuredPool },
+    { data: jobRows },
+    { data: newsRows },
+    {
+      data: { user },
+    },
+  ] = await Promise.all([
+    supabase.from("profiles").select("company, location").eq("is_active", true),
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("is_active", true)
+      .eq("is_featured_eligible", true),
+    supabase
+      .from("jobs")
+      .select("*, poster:profiles!posted_by(id, name)")
+      .order("created_at", { ascending: false })
+      .limit(4),
+    supabase
+      .from("news")
+      .select("id, title, published_at, cover_image_url")
+      .order("published_at", { ascending: false })
+      .limit(3),
+    supabase.auth.getUser(),
+  ]);
+
+  // Stats
+  const meta = allMeta ?? [];
+  const totalAlumni = meta.length;
+  const uniqueCompanies = new Set(
+    meta.map((p) => p.company as string | null).filter(Boolean)
+  ).size;
+  const uniqueLocations = new Set(
+    meta
+      .map((p) => {
+        if (!p.location) return null;
+        const parts = (p.location as string).split(",").map((s) => s.trim());
+        return parts[parts.length - 1] || null;
+      })
+      .filter(Boolean)
+  ).size;
+
+  // Featured alumni — seeded weekly shuffle, capped at 6
+  const featured = seededShuffle(featuredPool ?? [], isoWeekSeed()).slice(
+    0,
+    6
+  ) as Profile[];
+
+  const jobs = (jobRows ?? []) as Job[];
+
   return (
     <>
       <Nav />
@@ -25,81 +112,33 @@ export default function Home() {
             <Link href="/people" className={cn(buttonVariants({ size: "lg" }))}>
               Browse Alumni
             </Link>
-            <Link href="/about" className={cn(buttonVariants({ variant: "outline", size: "lg" }))}>
+            <Link
+              href="/about"
+              className={cn(buttonVariants({ variant: "outline", size: "lg" }))}
+            >
               Learn More
             </Link>
           </div>
         </section>
 
-        {/* Design system preview — verifies tokens are working */}
-        <section className="border-t border-border px-6 py-16 max-w-7xl mx-auto">
-          <h2 className="font-heading text-3xl mb-8 text-foreground">Design System</h2>
-          <div className="grid gap-8">
-            {/* Colors */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">Colors</p>
-              <div className="flex flex-wrap gap-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-primary" />
-                  <span className="text-sm">Primary (CMU Red)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-background border border-border" />
-                  <span className="text-sm">Background (Off-white)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded bg-muted" />
-                  <span className="text-sm">Muted</span>
-                </div>
-              </div>
-            </div>
+        {/* Live stats */}
+        <StatsBar
+          totalAlumni={totalAlumni}
+          uniqueCompanies={uniqueCompanies}
+          uniqueLocations={uniqueLocations}
+        />
 
-            {/* Typography */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">Typography</p>
-              <p className="font-heading text-4xl">Instrument Serif — headings</p>
-              <p className="font-sans text-base mt-2 text-muted-foreground">Inter — body text and UI</p>
-            </div>
+        {/* Featured alumni */}
+        {featured.length > 0 && <FeaturedAlumni profiles={featured} />}
 
-            {/* Badges */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">Badges</p>
-              <div className="flex flex-wrap gap-2">
-                <Badge>UX Research</Badge>
-                <Badge>Product Design</Badge>
-                <Badge variant="outline">Accessibility</Badge>
-                <Badge variant="secondary">Open to Mentorship</Badge>
-              </div>
-            </div>
+        {/* Recent jobs */}
+        <RecentJobs jobs={jobs} />
 
-            {/* Card */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">Card</p>
-              <Card className="max-w-sm">
-                <CardContent className="pt-6">
-                  <p className="font-heading text-xl">Jane Smith</p>
-                  <p className="text-sm text-muted-foreground mt-1">Product Designer · MHCI 2022</p>
-                  <div className="flex gap-2 mt-3">
-                    <Badge variant="outline">UX Research</Badge>
-                    <Badge variant="outline">Figma</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+        {/* Recent news */}
+        <RecentNews posts={newsRows ?? []} />
 
-            {/* Buttons */}
-            <div>
-              <p className="text-sm text-muted-foreground mb-4 uppercase tracking-wider">Buttons</p>
-              <div className="flex flex-wrap gap-3">
-                <Button>Primary</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="secondary">Secondary</Button>
-                <Button variant="ghost">Ghost</Button>
-                <Button variant="destructive">Destructive</Button>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Join CTA — only for unauthenticated visitors */}
+        {!user && <JoinCTA />}
       </main>
     </>
   );
