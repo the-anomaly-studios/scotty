@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import type { Profile } from "@/lib/types";
 import { Globe, Mail } from "lucide-react";
+import { RequestMentorship } from "@/components/mentorship/request-mentorship";
 
 export default async function PublicProfilePage({
   params,
@@ -29,6 +30,20 @@ export default async function PublicProfilePage({
 
   const p = profile as Profile;
   const displayName = p.name ?? "MHCI Alumni";
+
+  // Determine the viewer so we can show the right mentorship CTA.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let viewerProfileId: string | null = null;
+  if (user) {
+    const { data: viewerProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", user.id)
+      .single();
+    viewerProfileId = viewerProfile?.id ?? null;
+  }
 
   return (
     <>
@@ -59,11 +74,18 @@ export default async function PublicProfilePage({
               {p.graduation_year && (
                 <p className="text-sm text-muted-foreground mt-0.5">MHCI {p.graduation_year}</p>
               )}
-              <div className="flex flex-wrap gap-2 mt-3">
-                {p.is_mentorship_open && (
+              {p.is_mentorship_open && (
+                <div className="flex flex-wrap items-center gap-3 mt-4">
                   <Badge variant="secondary">Open to mentorship</Badge>
-                )}
-              </div>
+                  <RequestMentorship
+                    toProfileId={p.id}
+                    fromProfileId={viewerProfileId}
+                    mentorName={displayName}
+                    isAuthed={Boolean(user)}
+                    isSelf={viewerProfileId === p.id}
+                  />
+                </div>
+              )}
             </div>
           </div>
 
