@@ -4,6 +4,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { createClient } from "@/lib/supabase/server";
 import { UserMenu } from "@/components/user-menu";
+import { MobileMenu } from "@/components/mobile-menu";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -36,7 +37,9 @@ export async function Nav() {
         >
           CMU MHCI
         </Link>
-        <div className="flex items-center gap-1">
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-1">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -61,6 +64,14 @@ export async function Nav() {
             </Link>
           )}
           <ThemeToggle />
+        </div>
+
+        {/* Mobile hamburger */}
+        <div className="flex md:hidden">
+          <MobileMenu
+            user={user ? { email: user.email ?? "" } : null}
+            avatarUrl={avatarUrl}
+          />
         </div>
       </nav>
     </header>
