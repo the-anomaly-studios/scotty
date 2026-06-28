@@ -101,7 +101,7 @@ export default async function Home() {
         {/* Hero */}
         <section className="min-h-[92vh] flex flex-col items-center justify-center text-center px-6">
           <p className="text-sm tracking-widest uppercase text-muted-foreground mb-6 font-sans">
-            Carnegie Mellon University
+            "It's like art school, but with computers"
           </p>
           <HeroTitle text="CMU MHCI" />
           <p className="mt-8 max-w-md text-muted-foreground text-lg leading-relaxed">
