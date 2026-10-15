@@ -15,8 +15,8 @@ export default async function LoginPage() {
     <main className="min-h-screen flex flex-col items-center justify-center px-6">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <h1 className="font-heading text-4xl text-foreground">CMU MHCI</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Alumni Directory</p>
+          <h1 className="font-heading text-4xl text-foreground">CMU MHCI Alumni</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Directory</p>
         </div>
 
         <Card>

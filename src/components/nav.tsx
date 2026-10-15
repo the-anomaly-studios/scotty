@@ -34,7 +34,7 @@ export async function Nav() {
           href="/"
           className="font-heading text-lg font-normal tracking-tight text-foreground hover:text-primary transition-colors"
         >
-          CMU MHCI
+          CMU MHCI Alumni
         </Link>
         <div className="flex items-center gap-1">
           {links.map((link) => (

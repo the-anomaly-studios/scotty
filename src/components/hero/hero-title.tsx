@@ -13,7 +13,7 @@ const TextDistortion = dynamic(() => import("./text-distortion"), {
 
 type Mode = "static" | "touch" | "webgl";
 
-export function HeroTitle({ text = "CMU MHCI" }: { text?: string }) {
+export function HeroTitle({ text = "CMU MHCI Alumni" }: { text?: string }) {
   // Start "static": the plain heading is server-rendered and shown until the
   // client decides, so there is no layout shift or flash.
   const [mode, setMode] = useState<Mode>("static");
@@ -33,7 +33,7 @@ export function HeroTitle({ text = "CMU MHCI" }: { text?: string }) {
         className={cn(
           // Horizontal/vertical padding (em-relative, so it scales with the
           // clamp font size) gives the WebGL displacement room before clipping.
-          "px-[0.12em] py-[0.06em] font-heading text-[clamp(4rem,16vw,14rem)] leading-none tracking-tight transition-opacity duration-700",
+          "px-[0.12em] py-[0.06em] font-heading text-[clamp(2.75rem,10.5vw,9.5rem)] leading-none tracking-tight transition-opacity duration-700",
           mode === "touch" && "hero-shimmer",
           mode === "webgl" && ready && "opacity-0"
         )}

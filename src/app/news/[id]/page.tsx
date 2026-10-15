@@ -20,7 +20,7 @@ export async function generateMetadata({
     .select("title")
     .eq("id", id)
     .single();
-  return { title: data ? `${data.title} · CMU MHCI News` : "News" };
+  return { title: data ? `${data.title} · CMU MHCI Alumni News` : "News" };
 }
 
 export default async function NewsPostPage({

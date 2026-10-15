@@ -103,7 +103,7 @@ export default async function Home() {
           <p className="text-sm tracking-widest uppercase text-muted-foreground mb-6 font-sans">
             Carnegie Mellon University
           </p>
-          <HeroTitle text="CMU MHCI" />
+          <HeroTitle text="CMU MHCI Alumni" />
           <p className="mt-8 max-w-md text-muted-foreground text-lg leading-relaxed">
             A community directory for alumni of the Masters in Human-Computer
             Interaction program.
